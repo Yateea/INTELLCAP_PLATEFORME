@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  partner-db:
+    image: postgres:15-alpine
+    container_name: partner_db
+    environment:
+      POSTGRES_DB: partner_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5437:5432"
+    volumes:
+      - partner_db_data:/var/lib/postgresql/data
+    networks:
+      - intellcap-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  partner-service:
+    build: .
+    container_name: partner_service
+    ports:
+      - "8095:8085"
+    environment:
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET: intellcap_secret_key_2024_very_long_string
+      SPRING_DATASOURCE_URL: jdbc:postgresql://partner-db:5432/partner_db
+    depends_on:
+      partner-db:
+        condition: service_healthy
+    networks:
+      - intellcap-network
+
+volumes:
+  partner_db_data:
+
+networks:
+  intellcap-network:
+    driver: bridge
